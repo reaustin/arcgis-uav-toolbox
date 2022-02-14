@@ -9,7 +9,22 @@ def tweet(msg, ap=None):
 	print(msg)
 
 
+# Set/Get ArcGIS properties
+def set_arcmap_param():
+    _prj = arcpy.mp.ArcGISProject("CURRENT")
+    param = {
+        'project': _prj,
+        'maps':  _prj.listMaps()[0],
+        'gdb':  _prj.defaultGeodatabase,
+        'root':  os.path.dirname(_prj.filePath),
+        #'scratch': "C:/temp/scratch/"
+        'scratch':  arcpy.env.scratchGDB
+    }
+    arcpy.env.overwriteOutput = True
+    return(param)
 
+
+# convert the plot vector layer into a raster and add the assocated data into a dictonary 
 def create_plot_raster(plot_lyr, plot_id_field, out_raster_file, debug=False):
 	tweet("MSG: Creating Plot Raster \n {0}".format(out_raster_file), ap=arcpy)
 	if(not debug):
@@ -26,7 +41,8 @@ def create_plot_raster(plot_lyr, plot_id_field, out_raster_file, debug=False):
 
 
 
-def set_classifed_raster(classified_raster):
+# Set information about a classifed raster 
+def set_classifed_raster_data(classified_raster):
 	_img_dsc = arcpy.Describe(classified_raster)
 	_class_img = {
 		'lyr': classified_raster,
@@ -41,6 +57,37 @@ def set_classifed_raster(classified_raster):
 		_class_img['df'] = table_to_data_frame(_class_img['path'])
 		
 	return(_class_img)
+
+
+
+# Set information about an image
+def set_image_data(image):
+    _imgDsc = arcpy.Describe(image)
+    _img_dict = {
+        'lyr': image,
+        'raster': arcpy.Raster(_imgDsc.nameString),
+        'name': arcpy.Raster(_imgDsc.nameString).name,
+        'name_base': os.path.splitext(arcpy.Raster(_imgDsc.nameString).name)[0],
+        'path': os.path.join(_imgDsc.path, _imgDsc.nameString),
+        'num_bands': _imgDsc.bandCount,
+        'has_vat': arcpy.Raster(_imgDsc.nameString).hasRAT
+    }
+    return(_img_dict)
+
+
+
+# get the full paths names to each band and assign a varable to use in the Raster Calculator
+def get_image_bands(uav_imgage, band_order):
+    _imgDsc = arcpy.Describe(uav_imgage)
+    _img = {}
+    for i, band in enumerate(_imgDsc.children):
+        _img[i] = {
+            'path': os.path.join(_imgDsc.catalogPath, band.name),
+            'raster': arcpy.Raster(os.path.join(_imgDsc.catalogPath, band.name)),
+            'name': band.name,
+            'color': band_order[i]
+        }
+    return(_img)
 
 
 
@@ -76,4 +123,26 @@ def merge_dataframes(plot_df, plot_id_field, classifed_raster_df, classifed_id_f
 	_zone_classras_merge_df.rename(columns={'value_x': 'value'}, inplace=True)
 	clean_zonestat_df(_zone_classras_merge_df)
 	return(_zone_classras_merge_df)
+
+
+
+### combine datafarmes intro a single dataframe
+def combine_dataframes(df_list):
+	_df_all = pd.DataFrame()
+	for df in df_list:
+		_df_all = _df_all.append(df)
+	return(_df_all)
+
+
+
+# Make a new directory for storing tiff,
+def make_dir(new_dir):
+    tweet('MSG: Making directory \n  - {0}'.format(new_dir), ap=arcpy)
+    if not os.path.exists(new_dir):
+        os.makedirs(new_dir)
+        return(new_dir)
+    else:
+        return(None)
+
+
 
