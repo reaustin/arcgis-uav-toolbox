@@ -72,7 +72,7 @@ def calcNGRDI(img, band_order=['R','G','B']):
 
 
 # Calculate the Modified Green Red Vegetation Index (MGVRI) - Bendig, et al. (2015)
-def calcNGRDI(img, band_order=['R','G','B']):
+def calcMGVRI(img, band_order=['R','G','B']):
     tweet('Calculating MGVRI...', ap=arcpy)
     _out_ras = RasterCalculator([img[0]['raster'], img[1]['raster'], img[2]['raster']], 
                                 band_order, 
@@ -83,7 +83,7 @@ def calcNGRDI(img, band_order=['R','G','B']):
 
 
 # Calculate the Modified Photochemical Reflectance Index (MPRI) - Yang et al.(2008)
-def calcNGRDI(img, band_order=['R','G','B']):
+def calcMPRI(img, band_order=['R','G','B']):
     tweet('Calculating MPRI...', ap=arcpy)
     _out_ras = RasterCalculator([img[0]['raster'], img[1]['raster'], img[2]['raster']], 
                                 band_order, 
@@ -102,4 +102,100 @@ def calcVEG(img, band_order=['R','G','B']):
                                 )
     return(_out_ras) 
 
-    
+
+### ========================================== ###
+#---- Below are 5 Bands Vegetative Indicies  ----#
+
+
+# Calculate the Normalised difference Vegetation Index (NDVI) - Rouse et al (1973)
+def calcNDVI(img, band_order):
+    tweet('Calculating NDVI...', ap=arcpy)
+    _raster_list = [ img[index]['raster'] for index, data in img.items() ]
+    _out_ras = RasterCalculator(_raster_list,
+                                band_order, 
+                                '(NIR - R) / (NIR + R)'
+                                )
+    return(_out_ras) 
+
+
+
+# Calculate the Red-Edge Normalised difference Vegetation Index (RENDVI) - Rouse et al (1973)
+def calcRENDVI(img, band_order):
+    tweet('Calculating RE-NDVI...', ap=arcpy)
+    _raster_list = [ img[index]['raster'] for index, data in img.items() ]
+    _out_ras = RasterCalculator(_raster_list,
+                                band_order, 
+                                '(RE - R) / (RE + R)'
+                                )
+    return(_out_ras) 
+
+
+
+# Calculate the Difference Vegatiavte Index (DVI) - Jordan (1969)
+def calcDVI(img, band_order):
+    tweet('Calculating DVI...', ap=arcpy)
+    _raster_list = [ img[index]['raster'] for index, data in img.items() ]
+    _out_ras = RasterCalculator(_raster_list,
+                                band_order, 
+                                'NIR - R'
+                                )
+    return(_out_ras) 
+
+
+# Calculate the Ratio Vegetation Index (RVI) - Pearson and Miller (1972)
+def calcRVI(img, band_order):
+    tweet('Calculating RVI...', ap=arcpy)
+    _raster_list = [ img[index]['raster'] for index, data in img.items() ]
+    _out_ras = RasterCalculator(_raster_list,
+                                band_order, 
+                                'NIR / R'
+                                )
+    return(_out_ras) 
+
+
+
+# Calculate the Green Normalized Difference Vegetation Index (GNDVI) - Ma et al. 1996
+def calcGNDVI(img, band_order):
+    tweet('Calculating GNDVI...', ap=arcpy)
+    _raster_list = [ img[index]['raster'] for index, data in img.items() ]
+    _out_ras = RasterCalculator(_raster_list,
+                                band_order, 
+                                '(NIR - G) / (NIR + G)'
+                                )
+    return(_out_ras) 
+
+
+# Calculate Chlorophyll Index (CI) - Gitelson et al
+def calcCI(img, band_order):
+    tweet('Calculating CI...', ap=arcpy)
+    _raster_list = [ img[index]['raster'] for index, data in img.items() ]
+    _out_ras = RasterCalculator(_raster_list,
+                                band_order, 
+                                '(NIR / R) - 1'
+                                )
+    return(_out_ras) 
+
+
+
+# Calculate Chlorophyll Vegetation Index CVI Vincini et al
+def calcCVI(img, band_order):
+    tweet('Calculating CVI...', ap=arcpy)
+    _raster_list = [ img[index]['raster'] for index, data in img.items() ]
+    _out_ras = RasterCalculator(_raster_list,
+                                band_order, 
+                                '(NIR / G) * (R / G)'
+                                )
+    return(_out_ras) 
+
+
+
+# Calculate Red Edge Index (REI) - Vogelmann et al.
+def calcREI(img, band_order):
+    tweet('Calculating REI...', ap=arcpy)
+    _raster_list = [ img[index]['raster'] for index, data in img.items() ]
+    _out_ras = RasterCalculator(_raster_list,
+                                band_order, 
+                                '(NIR / RE)'
+                                )
+    return(_out_ras) 
+

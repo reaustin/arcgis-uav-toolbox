@@ -146,3 +146,13 @@ def make_dir(new_dir):
 
 
 
+# Set the band order based on the number of bands in the image (taking a best guess here)
+def set_band_order(num_bands=3):
+	if(num_bands == 3):
+		return(['R', 'G', 'B'])						# assuming p4 RGB image
+	if(num_bands == 5):
+		return(['B', 'G', 'R', 'RE', 'NIR'])		# assuming rededge 
+	if(num_bands == 6):
+		return(['B', 'G', 'R', 'RE', 'NIR', 'LWIR']) 		# assuming altum
+	return(None)
+	
