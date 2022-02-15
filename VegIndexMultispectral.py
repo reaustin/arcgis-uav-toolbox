@@ -62,10 +62,6 @@ if __name__ == '__main__':
         'bands' : f.get_image_bands(_toolparam['img'], _band_order)
     })
 
-    # create a directory for output tiffs
-    _vi_directory = os.path.join(_mapparam['root'], VEG_INDEX_DIR)
-    if(_toolparam['tiff_flag']):
-        f.make_dir(_vi_directory)
 
      # A dictionary to keep track of index rasters
     vi_raster_data = {}
@@ -82,7 +78,7 @@ if __name__ == '__main__':
     # Calculate a vegetative index (RENDVI)
     if(_toolparam['veg_index'] in ['RENDVI','ALL']):
         _rendvi = vi.calcRENDVI(_uavimg_data['bands'], _band_order)
-        vi_raster_data['_rendvi'] = {
+        vi_raster_data['rendvi'] = {
             'index' : 'RENDVI',
             'raster': _rendvi,
             'out_tiff': _uavimg_data['name_base'] + '_rendvi.tif'
@@ -178,12 +174,14 @@ if __name__ == '__main__':
     _zonestat_merge.to_csv(_toolparam['out_stat_file'].value, index=False)
 
 
-    # Write the tiffs to disk
+    # Write the tiffs to disk - make directory if needed
     if(_toolparam['tiff_flag']):
+        _vi_directory = os.path.join(_mapparam['root'], VEG_INDEX_DIR)
+        f.make_dir(_vi_directory)
         for index, data in vi_raster_data.items():
             outFilePath = os.path.join(_vi_directory, data['out_tiff'])
             tweet("MSG: Saving raster for index ({0})\n  - {1}".format(data['index'], outFilePath), ap=arcpy)
             data['raster'].save(outFilePath)
+            
 
-
-    tweet("ALL DONE WITH YOUR WORK..SUCCA", ap=arcpy)
+    tweet("YOU WELCOME...", ap=arcpy)

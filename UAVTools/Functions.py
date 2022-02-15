@@ -76,6 +76,24 @@ def set_image_data(image):
 
 
 
+# Set information about a raster layer 
+def set_raster_data(raster):
+	_img_dsc = arcpy.Describe(raster)
+	_raster_data = {
+		'lyr': raster,
+		'raster': arcpy.Raster(_img_dsc.nameString), 
+		'name' : arcpy.Raster(_img_dsc.nameString).name, 
+		'name_base': os.path.splitext(arcpy.Raster(_img_dsc.nameString).name)[0],
+		'path': os.path.join(_img_dsc.path,_img_dsc.nameString),
+		'num_bands': _img_dsc.bandCount,
+		'has_vat': arcpy.Raster(_img_dsc.nameString).hasRAT
+	}
+	if(_raster_data['has_vat']):
+		_raster_data['df'] = table_to_data_frame(_raster_data['path'])
+	return(_raster_data)
+
+
+
 # get the full paths names to each band and assign a varable to use in the Raster Calculator
 def get_image_bands(uav_imgage, band_order):
     _imgDsc = arcpy.Describe(uav_imgage)
@@ -155,4 +173,13 @@ def set_band_order(num_bands=3):
 	if(num_bands == 6):
 		return(['B', 'G', 'R', 'RE', 'NIR', 'LWIR']) 		# assuming altum
 	return(None)
-	
+
+
+
+# look for a 8 digit date in a string (i.e. filename) that is separated by underscores
+def find_date(filename):
+	str_list = filename.split('_')
+	for i in str_list:
+		if(len(i) == 8 and i.isdecimal()):
+			return(i)
+	return(filename)

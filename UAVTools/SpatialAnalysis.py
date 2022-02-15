@@ -44,4 +44,13 @@ def extract_plots(uav_image, plot_lyr):
     tweet('MSG: Extracting UAV image using plot layer.. \n  - img:{0} \n  - plots:{1}'.format(uav_image, plot_lyr), ap=arcpy)
     return(ExtractByMask(uav_image, plot_lyr))
 
-    
+
+
+# subtract two layers from one another resulting in a difference surface
+def calc_volume(base_raster, surface_raster):
+    tweet('MSG: Calculating difference between surface rasters..', ap=arcpy)
+    _out_ras = RasterCalculator([base_raster, surface_raster], 
+                                ['BASE','SURFACE'], 
+                                'SURFACE - BASE'
+                                )
+    return(_out_ras)
