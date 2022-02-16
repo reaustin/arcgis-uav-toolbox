@@ -72,20 +72,16 @@ if __name__ == '__main__':
         _out_stat_file = os.path.join(_mapparam['scratch'], filename + '_zs')
         zone_stat_data[filename] = zps.calculate(dsm_data['raster'], _out_stat_file, 'dataset', f.find_date(filename))
   
-        
-
 
     # combine all the data frames into one 
     _df_list = [zone_stat_data[filename]['df'] for filename, data in zone_stat_data.items()]
     _zonestat_df_all = f.combine_dataframes(_df_list)
 
 
-
     # clean up some columns
     #_dropCol = ['variety','majority', 'minority', 'median', 'pct90', 'count_y']
     #_zonestat_merge.drop(columns=_dropCol, axis=1, errors='ignore', inplace=True), 
     #_zonestat_merge.sort_values(by=['index','value'], inplace=True)
-
 
 	# Save the zonal statistics to a table
     tweet("MSG: Saving Zonal Statistics\n  -> {0}".format(_toolparam['out_stat_file'].value), ap=arcpy)

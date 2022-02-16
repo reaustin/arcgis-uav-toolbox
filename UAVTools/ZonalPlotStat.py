@@ -18,7 +18,7 @@ def table_to_data_frame(in_table, input_fields=None, where_clause=None):
 
 # clean up a data frame by removeing certain columns 
 def clean_zonestat_df(zs_df, drop_columns=['value_y','count_x', 'count_y', 'red', 'green', 'blue']):
-    zs_df.drop(columns=drop_columns, inplace=True)
+    zs_df.drop(columns=drop_columns, axis=1, errors='ignore', inplace=True)
     zs_df.sort_values(by=['value'], inplace=True)
 
 

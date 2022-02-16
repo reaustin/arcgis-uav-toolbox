@@ -125,10 +125,18 @@ def table_to_data_frame(in_table, input_fields=None, where_clause=None):
 
 
 ### clean up tey data frame by removeing pixel counts and other unneeded columns
-def clean_zonestat_df(zs_df):
-	dropCol = ['value_y','count_x', 'count_y', 'red', 'green', 'blue']
-	zs_df.drop(columns=dropCol, inplace=True)
-	zs_df.sort_values(by=['value'], inplace=True)
+# def clean_zonestat_df(zs_df):
+# 	dropCol = ['value_y','count_x', 'count_y', 'red', 'green', 'blue']
+# 	zs_df.drop(columns=dropCol, inplace=True)
+# 	zs_df.sort_values(by=['value'], inplace=True)
+
+
+
+# clean up a data frame by removeing certain columns 
+def clean_zonestat_df(zs_df, drop_columns=['value_y','count_x', 'count_y', 'red', 'green', 'blue'], sort_by=None):
+	zs_df.drop(columns=drop_columns, axis=1, errors='ignore', inplace=True)
+	if(sort_by is not None):
+		zs_df.sort_values(by=sort_by, inplace=True)
 
 
 
