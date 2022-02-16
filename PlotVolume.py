@@ -102,4 +102,5 @@ if __name__ == '__main__':
             data['raster'].save(outFilePath)
 
 
+    zps.cleanup()
     tweet("FINI...", ap=arcpy)        

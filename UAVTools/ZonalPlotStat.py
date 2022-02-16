@@ -2,6 +2,7 @@ import os,sys
 import arcpy
 import pandas as pd
 
+
 # convert a table into a pandas dataframe
 def table_to_data_frame(in_table, input_fields=None, where_clause=None):
     OIDFieldName = arcpy.Describe(in_table).OIDFieldName
@@ -24,13 +25,15 @@ def clean_zonestat_df(zs_df, drop_columns=['value_y','count_x', 'count_y', 'red'
 
 class ZonalPlotStat():
 
-    PLOT_NAME = 'in_memory\\plot_ras'
-    CLASSIFIED_RASTER_NAME = 'in_memory\\zone_ras'
+    PLOT_NAME =  os.path.join('in_memory', 'plot_ras')
+    CLASSIFIED_RASTER_NAME =  os.path.join('in_memory','zone_ras')
+    ZONE_RASTER_NAME = os.path.join('in_memory', 'zone_ras')
 
     def __init__(self, workspace, plot_layer, plot_id_field, classified_raster=None):
         #self.tweet("Init...", ap=arcpy)
         arcpy.env.overwriteOutput = True
         self.workspace = workspace
+        self.classified_raster = classified_raster
         self.plotlyr_data = self.set_plotlyr_data(plot_layer, plot_id_field)
 
         if(classified_raster is not None):
@@ -38,10 +41,7 @@ class ZonalPlotStat():
             self.plot_raster_data = self.create_plot_raster()
             self.zone_raster_data = self.combine_rasters()
             self.zone_raster_data.update( { 'lookup_df': self.merge_dataframes() })
-        else:
-            pass
-
-
+ 
 
     def tweet(self, msg, ap=None):
         if(ap is not None):
@@ -94,14 +94,13 @@ class ZonalPlotStat():
 
     # combine the plot raster with the classified raster to create a unque zone raster 
     def combine_rasters(self):
-        _zoneraster_file = os.path.join(self.workspace, "zone_ras")
-        #self.tweet("MSG: Combining Plot Raster with Classified Raster to create Zone Raster...".format(_zoneraster_file), ap=arcpy)
+        #self.tweet("MSG: Combining Plot Raster with Classified Raster to create Zone Raster...".format(self.ZONE_RASTER_NAME), ap=arcpy)
         _combine_raster = arcpy.sa.Combine([self.plot_raster_data['raster'], self.classified_raster_data['raster']])
-        _combine_raster.save(_zoneraster_file)
+        _combine_raster.save(self.ZONE_RASTER_NAME)
         _zone_data = {
-            'raster': arcpy.Raster(_zoneraster_file),
-            'path': _zoneraster_file,
-            'df': table_to_data_frame(_zoneraster_file)
+            'raster': arcpy.Raster(self.ZONE_RASTER_NAME),
+            'path': self.ZONE_RASTER_NAME,
+            'df': table_to_data_frame(self.ZONE_RASTER_NAME)
         }
         return(_zone_data)
 
@@ -131,13 +130,26 @@ class ZonalPlotStat():
 
     # Calculate the statistics by zone using the value_raster 
     #  - adds a column and id to the data frame so that when merged they are unique
+    #  - if no classifed raster is specified, run on plot layer
     def calculate(self, value_raster, out_stat_file, dataframe_column, dataframe_id):
-        arcpy.sa.ZonalStatisticsAsTable(self.zone_raster_data['raster'], 'value', value_raster, out_stat_file, "DATA", "ALL")
-        _out_stat_df = table_to_data_frame(out_stat_file)
-        _out_stat_df[dataframe_column] = dataframe_id                                                   # add a column and data to the dataframe
-        _zonestat_merge = pd.merge(_out_stat_df, self.zone_raster_data['lookup_df'], on='value')       # merge the plot/classified raster lookup table
+        if(self.classified_raster is not None):
+            arcpy.sa.ZonalStatisticsAsTable(self.zone_raster_data['raster'], 'value', value_raster, out_stat_file, "DATA", "ALL")
+            _out_stat_df = table_to_data_frame(out_stat_file)
+            _zonestat_df = pd.merge(_out_stat_df, self.zone_raster_data['lookup_df'], on='value')            # merge the plot/classified raster lookup table
+        else:
+            arcpy.sa.ZonalStatisticsAsTable(self.plotlyr_data['lyr'], self.plotlyr_data['id_field'], value_raster, out_stat_file, "DATA", "ALL")
+            _zonestat_df = table_to_data_frame(out_stat_file)
+        
+        _zonestat_df[dataframe_column] = dataframe_id                                                   # add a column and data to the dataframe
         _zonal_stats = {
             'path': out_stat_file,
-            'df': _zonestat_merge
+            'df': _zonestat_df
         }        
         return(_zonal_stats)
+
+
+    def cleanup(self):
+        arcpy.Delete_management(self.PLOT_NAME)
+        arcpy.Delete_management(self.CLASSIFIED_RASTER_NAME)
+        arcpy.Delete_management(self.ZONE_RASTER_NAME)
+
