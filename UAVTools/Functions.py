@@ -3,10 +3,21 @@ import pandas as pd
 import arcpy
 
 
+
+# Send a message to the console or ArcGIS Messgae box
 def tweet(msg, ap=None):
 	if(ap is not None):
 		ap.AddMessage(msg)
 	print(msg)
+
+
+
+# Get the tools parameters [plot_lyr, img_list, output_folder, buffer_distance]
+def get_tool_param():
+    param = {}
+    for p in arcpy.GetParameterInfo():
+        param[p.name] = p.value
+    return(param)
 
 
 # Set/Get ArcGIS properties
@@ -94,6 +105,29 @@ def set_raster_data(raster):
 
 
 
+# Set information about a vector layer 
+def set_layer_data(layer):
+	_layer_description = arcpy.Describe(layer)
+	_layer_data = {
+		'lyr': layer,
+		'name' : _layer_description.nameString,
+		'path': os.path.join(_layer_description.path,_layer_description.nameString),
+		'feature_class': _layer_description.featureClass
+	}
+	return(_layer_data)
+
+
+
+# set information about a layer in memory
+def set_memory_layer_data(memory_layer):
+	_memory_layer_data = {
+		'lyr': memory_layer,
+		'name' : memory_layer.nameString
+	}
+	return(_memory_layer_data)
+
+
+
 # get the full paths names to each band and assign a varable to use in the Raster Calculator
 def get_image_bands(uav_imgage, band_order):
     _imgDsc = arcpy.Describe(uav_imgage)
@@ -107,6 +141,15 @@ def get_image_bands(uav_imgage, band_order):
         }
     return(_img)
 
+
+
+# check the number of bands in a raster
+def check_bands(img, band_number):
+	_bands = arcpy.Describe(img).bandCount
+	if(_bands == band_number):
+		return(True)
+	else:
+		return(False)	
 
 
 
