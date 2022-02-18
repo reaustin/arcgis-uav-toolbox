@@ -10,35 +10,6 @@ reload(UAVTools.Functions)
 
 
 
-# ###---------- FUNCTION BLOCK -----------------------
-# def tweet(msg, ap=None):
-# 	if(ap is not None):
-# 		ap.AddMessage(msg)
-# 	print(msg)
-
-# ### Get the tools parameters [plotLyr, sliceDir, sliceNum, outPlotLyr, number_to_group, field_name]
-# def getToolParam():
-# 	toolParam = {}
-# 	params	= arcpy.GetParameterInfo()
-# 	for p in params:
-# 		toolParam[p.name] = p.value
-# 	toolParam['toolpath'] = os.path.realpath(__file__)
-# 	return(toolParam)
-
-
-# ### Set/Get ArcGIS properties
-# def setArcMapParam():
-# 	param = {}
-# 	param['project'] = arcpy.mp.ArcGISProject("CURRENT")
-# 	param['maps'] = param['project'].listMaps()[0]
-# 	param['gdb'] = param['project'].defaultGeodatabase
-# 	arcpy.env.overwriteOutput = True 
-# 	param['sr'] = arcpy.SpatialReference(2264)
-# 	return param
-
-
-
-
 def load_polys(plot_layer, plot_id_field):
 	_plot_poly = {}
 	for row in arcpy.da.SearchCursor(plot_layer, ['OID@', plot_id_field, 'SHAPE@']):
@@ -149,12 +120,10 @@ def add_layer_to_map(arcmap_paramters, output_data):
 #### set paramters for outputs
 def set_output_data(tool_parameters):
 	_out_param = {
-		# 'plot_layer': tool_parameters['plot_layer'],
-		# 'plot_id_field': tool_parameters['plot_layer_id'].value,		# column in original layer to use as main plot id
-		'slice_layer_path': tool_parameters['out_plot_layer'],
-		'slice_layer_name': os.path.basename(arcpy.Describe(tool_parameters['out_plot_layer']).nameString),
-		'slice_layer_path': os.path.dirname(arcpy.Describe(tool_parameters['out_plot_layer']).nameString),									
-		'slice_id_field': 'row'											# new column name for sliced polygons
+		'slice_layer': tool_parameters['out_plot_layer'],
+		'slice_layer_name': arcpy.Describe(tool_parameters['out_plot_layer']).name,
+		'slice_layer_path': os.path.dirname(tool_parameters['out_plot_layer'].value),									
+		'slice_id_field': 'Row'											# new column name for sliced polygons
 		#'symLyr': os.path.join(os.path.dirname(os.path.realpath(__file__)),'plot.lyrx')
 	}
 	#tweet(outParam, ap=arcpy)
@@ -187,18 +156,36 @@ def create_layer(sliced_polygons, sr, output_data, tool_param):
 	newlayer = arcpy.management.CreateFeatureclass(output_data['slice_layer_path'], output_data['slice_layer_name'], "POLYGON", spatial_reference=sr)
 	fClass = newlayer[0]		# get the path to the layer 
 	arcpy.AddField_management(fClass, tool_param['plot_layer_id'].value, "TEXT", field_length=12)	
-	arcpy.AddField_management(fClass, output_data['slice_id_field'], "TEXT", field_length=15)	
-	
+	#arcpy.AddField_management(fClass, output_data['slice_id_field'], "TEXT", field_length=15)
+	arcpy.AddField_management(fClass, output_data['slice_id_field'], "LONG")
+			
 	with arcpy.da.InsertCursor(fClass, ['SHAPE@', tool_param['plot_layer_id'].value, output_data['slice_id_field']]) as cursor:
 		for oid, poly in sliced_polygons.items():					 # loop through polygons inserting..
 			pid = str(poly['plot_id'])							
 			sliceNum = 1										 
 			for p in poly['slice_polygon_geometry']:						# each one of the polygon slices
-				newId = pid + '-' + str(sliceNum)
+				#newId = pid + '-' + str(sliceNum)
+				newId = sliceNum
 				cursor.insertRow([p, pid, newId])	
 				sliceNum += 1
 	del cursor
 	return(fClass)
+
+
+# add a field to the sliced polygon layer';s attribute table so as to group slices within polygons (i.e. treatments)
+def add_grouping_field(sliced_layer, field_to_slice_on, sliced_field_id, number_to_group):
+	arcpy.AddField_management(sliced_layer, sliced_field_id, "LONG")
+
+	_max_slice_value = max([cur[0] for cur in arcpy.da.SearchCursor(sliced_layer, field_to_slice_on)])
+	f.tweet("Maximum Row Value: {0}".format(_max_slice_value), ap=arcpy) 
+
+	if(_max_slice_value % number_to_group != 0):
+		arcpy.AddWarning("Can't split {0} rows evenly with {1} groupings".format(_max_slice_value, number_to_group)) 
+	else:
+		f.tweet("Adding and calculating Field: {0}".format(sliced_field_id), ap=arcpy) 
+		_expres = 'int((!row!-1)/{0}) + 1'.format(number_to_group)
+		arcpy.CalculateField_management(sliced_layer, sliced_field_id, _expres, "PYTHON3")
+
 
 
 
@@ -215,8 +202,6 @@ if __name__ == '__main__':
 
 	# set the output data
 	_output_data = set_output_data(_toolparam)
-	
-	f.tweet(_toolparam, ap=arcpy)
 
 	# read the plots into a dictionary
 	_plot_poly_data = load_polys(_toolparam['plot_layer'], _toolparam['plot_layer_id'].value)
@@ -227,9 +212,15 @@ if __name__ == '__main__':
 	# create and sav ethe new sliced layer
 	_new_sliced_layer = create_layer(_sliced_polygons, _mapparam['sr'], _output_data, _toolparam)
 
-	sys.exit()
+	#sys.exit()
+	#_new_sliced_layer = arcpy.MakeFeatureLayer_management(os.path.join(_mapparam['gdb'], 'PlotSlice'),"slice_layer")
+	
+	if(_toolparam['number_to_group'] > 0 and _toolparam['field_name'] is not None):
+		add_grouping_field(_new_sliced_layer, _output_data['slice_id_field'], _toolparam['field_name'], _toolparam['number_to_group'])
 
-	add_layer_to_map(_mapparam, _output_data)
+	f.tweet("ALL SLICED UP LIKE A NINJI...", ap=arcpy)
+
+	#add_layer_to_map(_mapparam, _output_data)
 	
 	
 
