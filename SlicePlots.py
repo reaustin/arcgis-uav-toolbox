@@ -1,52 +1,63 @@
+import UAVTools.Functions
+import UAVTools.Functions as f
+
 import os, sys
 import arcpy
 from arcpy import Point, Polygon
 
-
-
-###---------- FUNCTION BLOCK -----------------------
-def tweet(msg, ap=None):
-	if(ap is not None):
-		ap.AddMessage(msg)
-	print(msg)
-
-### Get the tools parameters [plotLyr, sliceDir, sliceNum, outPlotLyr]
-def getToolParam():
-	toolParam = {}
-	params	= arcpy.GetParameterInfo()
-	for p in params:
-		toolParam[p.name] = p.value
-	toolParam['toolpath'] = os.path.realpath(__file__)
-	return(toolParam)
-
-
-### Set/Get ArcGIS properties
-def setArcMapParam():
-	param = {}
-	param['project'] = arcpy.mp.ArcGISProject("CURRENT")
-	param['maps'] = param['project'].listMaps()[0]
-	param['gdb'] = param['project'].defaultGeodatabase
-	arcpy.env.overwriteOutput = True 
-	param['sr'] = arcpy.SpatialReference(2264)
-	return param
+from importlib import reload
+reload(UAVTools.Functions)
 
 
 
-def loadPolys(plotLyr, plotId):
-	plotPoly = {}
-	for row in arcpy.da.SearchCursor(plotLyr, ['OID@', plotId, 'SHAPE@']):
-		pts = []
-		plotPoly[row[0]] = { 'oid': row[0], 'plotId': row[1], 'pts' : row[2].getPart(0) } 	## just get the outside polygon (no rings)
-	return(plotPoly)	
+# ###---------- FUNCTION BLOCK -----------------------
+# def tweet(msg, ap=None):
+# 	if(ap is not None):
+# 		ap.AddMessage(msg)
+# 	print(msg)
+
+# ### Get the tools parameters [plotLyr, sliceDir, sliceNum, outPlotLyr, number_to_group, field_name]
+# def getToolParam():
+# 	toolParam = {}
+# 	params	= arcpy.GetParameterInfo()
+# 	for p in params:
+# 		toolParam[p.name] = p.value
+# 	toolParam['toolpath'] = os.path.realpath(__file__)
+# 	return(toolParam)
+
+
+# ### Set/Get ArcGIS properties
+# def setArcMapParam():
+# 	param = {}
+# 	param['project'] = arcpy.mp.ArcGISProject("CURRENT")
+# 	param['maps'] = param['project'].listMaps()[0]
+# 	param['gdb'] = param['project'].defaultGeodatabase
+# 	arcpy.env.overwriteOutput = True 
+# 	param['sr'] = arcpy.SpatialReference(2264)
+# 	return param
+
+
+
+
+def load_polys(plot_layer, plot_id_field):
+	_plot_poly = {}
+	for row in arcpy.da.SearchCursor(plot_layer, ['OID@', plot_id_field, 'SHAPE@']):
+		_pts = []
+		_plot_poly[row[0]] = { 				## just get the outside polygon (no rings)
+			'oid': row[0], 
+			'plotId': row[1], 
+			'pts' : row[2].getPart(0) 
+			} 	
+	return(_plot_poly)	
 
 
 
 ### concert at the Points into PointGeometry for addional functionality
-def createPtGeom(poly, sr):
-	pts = []
+def create_point_geometry(poly, sr):
+	_pts = []
 	for p in poly:
-		pts.append(arcpy.PointGeometry(p, sr))
-	return(pts)
+		_pts.append(arcpy.PointGeometry(p, sr))
+	return(_pts)
 
 
 
@@ -61,10 +72,10 @@ def disBetweenPts(pt1, pt2, mapParam):
 # - this is based on the sliceDir parameter [Length or Width]
 # - the rray indicates the points and their order to use when creating the new plots 
 #    -line segment1 uses points 1,4    line segment2 uses 2,3  (Length and distP1P2 > distP1P4)
-def getCornersToSlice(polyPtsGeom, direction):
-	distP1P2 = abs(polyPtsGeom[0].distanceTo(polyPtsGeom[1]))
-	distP1P4 = abs(polyPtsGeom[0].distanceTo(polyPtsGeom[3]))
-	tweet("MSG: Distance To Corners: P1 to P2: {0:.2f}, P1 to P4: {1:.2f}".format(distP1P2, distP1P4), ap=arcpy)
+def get_corners_to_slice(polygon_pt_geometry, direction):
+	distP1P2 = abs(polygon_pt_geometry[0].distanceTo(polygon_pt_geometry[1]))
+	distP1P4 = abs(polygon_pt_geometry[0].distanceTo(polygon_pt_geometry[3]))
+	f.tweet("MSG: Distance To Corners: P1 to P2: {0:.2f}, P1 to P4: {1:.2f}".format(distP1P2, distP1P4), ap=arcpy)
 	if(direction == 'Width'):
 		if(distP1P2 > distP1P4):
 			return([1,4,2,3])
@@ -100,8 +111,8 @@ def getSlicePoints(pt1, pt2, numSlices):
 def slicePoly(toolParam, polyPtsGeom, sr):
 	
 	lineSegSlicePoints = { 
-		1: getSlicePoints(polyPtsGeom[toolParam['corners'][0]], polyPtsGeom[toolParam['corners'][1]], toolParam['sliceNum']),
-		2: getSlicePoints(polyPtsGeom[toolParam['corners'][2]], polyPtsGeom[toolParam['corners'][3]], toolParam['sliceNum'])
+		1: getSlicePoints(polyPtsGeom[toolParam['corners'][0]], polyPtsGeom[toolParam['corners'][1]], toolParam['slice_number']),
+		2: getSlicePoints(polyPtsGeom[toolParam['corners'][2]], polyPtsGeom[toolParam['corners'][3]], toolParam['slice_number'])
 	}
 			
 	### create an array of new Polygon features that are the sliced based on the parallel line segments
@@ -118,38 +129,71 @@ def slicePoly(toolParam, polyPtsGeom, sr):
 
 
 
-def sliceAllPolys(mapParam, toolParam, plotPoly):
-	polyPtsGeom = createPtGeom(plotPoly[1]['pts'], mapParam['sr'])
-	toolParam['corners'] = getCornersToSlice(polyPtsGeom, toolParam['sliceDir'])
-	tweet("MSG: Sequence of Plot Corners: {0} ".format(toolParam['corners']), ap=arcpy)
+#### add the plot layer to the data frame
+def add_layer_to_map(arcmap_paramters, output_data):
+	f.tweet("Loading Plot Layer: {0}".format(output_data['slice_layer_path']), ap=arcpy)
+	_full_path_to_slice_layer = os.path.join(output_data['slice_layer_path'],output_data['slice_layer_name'])
+	plotLyr = arcmap_paramters['maps'].addDataFromPath(_full_path_to_slice_layer)
+	exp = '$feature.' + output_data['slice_id_field']
+	
+	#arcpy.management.ApplySymbologyFromLayer(plotLyr, output_parameters['symLyr'])
+	
+	for lyr in arcmap_paramters['maps'].listLayers():
+		# tweet(lyr.name, ap=arcpy)
+		if(lyr.name == output_data['slice_layer_name']):
+			labelClasses = lyr.listLabelClasses()
+			labelClasses[0].expression = exp
+			lyr.showLabels = False	
+
+
+#### set paramters for outputs
+def set_output_data(tool_parameters):
+	_out_param = {
+		# 'plot_layer': tool_parameters['plot_layer'],
+		# 'plot_id_field': tool_parameters['plot_layer_id'].value,		# column in original layer to use as main plot id
+		'slice_layer_path': tool_parameters['out_plot_layer'],
+		'slice_layer_name': os.path.basename(arcpy.Describe(tool_parameters['out_plot_layer']).nameString),
+		'slice_layer_path': os.path.dirname(arcpy.Describe(tool_parameters['out_plot_layer']).nameString),									
+		'slice_id_field': 'row'											# new column name for sliced polygons
+		#'symLyr': os.path.join(os.path.dirname(os.path.realpath(__file__)),'plot.lyrx')
+	}
+	#tweet(outParam, ap=arcpy)
+	return(_out_param)
+
+
+
+def slice_all_polygons(map_param, tool_param, plot_polygons):
+	_polygon_point_geometry = create_point_geometry(plot_polygons[1]['pts'], map_param['sr'])
+	tool_param['corners'] = get_corners_to_slice(_polygon_point_geometry, tool_param['slice_direction'])
+	f.tweet("MSG: Sequence of Plot Corners: {0} ".format(tool_param['corners']), ap=arcpy)
 	
 	slicedPoly = {}
-	for oid, p in plotPoly.items():
+	for oid, p in plot_polygons.items():
 		#tweet(plotPoly[oid]['pts'], ap=arcpy)
 		#tweet(plotPoly[oid]['oid'], ap=arcpy)
-		polyPtsGeom = createPtGeom(plotPoly[oid]['pts'], mapParam['sr'])
+		_polygon_point_geometry = create_point_geometry(plot_polygons[oid]['pts'], map_param['sr'])
 		slicedPoly[oid] = {
 			'oid': oid,
-			'plotId': plotPoly[oid]['plotId'],
-			'slicePolyGeom': slicePoly(toolParam, polyPtsGeom, mapParam['sr'])
+			'plot_id': plot_polygons[oid]['plotId'],
+			'slice_polygon_geometry': slicePoly(tool_param, _polygon_point_geometry, map_param['sr'])
 		}
 	return(slicedPoly)
-	
 
 
-#### create the new plot layer and add all the new slices plots 	
-def createLayer(outParam, slicedPoly, sr):
-	tweet("Msg: Creating New Slices Plot Trial Layer...{0} - {1}\n".format(outParam['lyrPath'], outParam['lyrName']), ap=arcpy)
-	newlayer = arcpy.management.CreateFeatureclass(outParam['lyrPath'], outParam['lyrName'], "POLYGON", spatial_reference=sr)
+
+#### create the new slices plot layer and add all the new slices plots 	
+def create_layer(sliced_polygons, sr, output_data, tool_param):
+	f.tweet("Msg: Creating New Slices Plot Trial Layer...{0} - {1}\n".format(output_data['slice_layer_path'], output_data['slice_layer_name']), ap=arcpy)
+	newlayer = arcpy.management.CreateFeatureclass(output_data['slice_layer_path'], output_data['slice_layer_name'], "POLYGON", spatial_reference=sr)
 	fClass = newlayer[0]		# get the path to the layer 
-	arcpy.AddField_management(fClass, outParam['plotId'], "TEXT", field_length=12)	
-	arcpy.AddField_management(fClass, outParam['plotIdSlice'], "TEXT", field_length=15)	
+	arcpy.AddField_management(fClass, tool_param['plot_layer_id'].value, "TEXT", field_length=12)	
+	arcpy.AddField_management(fClass, output_data['slice_id_field'], "TEXT", field_length=15)	
 	
-	with arcpy.da.InsertCursor(fClass, ['SHAPE@', outParam['plotId'], outParam['plotIdSlice']]) as cursor:
-		for oid, poly in slicedPoly.items():					 # loop through polygons inserting..
-			pid = str(poly['plotId'])							
+	with arcpy.da.InsertCursor(fClass, ['SHAPE@', tool_param['plot_layer_id'].value, output_data['slice_id_field']]) as cursor:
+		for oid, poly in sliced_polygons.items():					 # loop through polygons inserting..
+			pid = str(poly['plot_id'])							
 			sliceNum = 1										 
-			for p in poly['slicePolyGeom']:						# each one of the polygon slices
+			for p in poly['slice_polygon_geometry']:						# each one of the polygon slices
 				newId = pid + '-' + str(sliceNum)
 				cursor.insertRow([p, pid, newId])	
 				sliceNum += 1
@@ -158,52 +202,34 @@ def createLayer(outParam, slicedPoly, sr):
 
 
 
-#### add the plot layer to the data frame
-def addLayer(outParam):
-	tweet("Loading Plot Layer: {0}".format(outParam['fullPath']), ap=arcpy)
-	plotLyr = mapParam['maps'].addDataFromPath(outParam['fullPath'])
-	exp = '$feature.' + outParam['plotIdSlice']
-	
-	#arcpy.management.ApplySymbologyFromLayer(plotLyr, outParam['symLyr'])
-	
-	for lyr in mapParam['maps'].listLayers():
-		# tweet(lyr.name, ap=arcpy)
-		if(lyr.name == outParam['lyrName']):
-			labelClasses = lyr.listLabelClasses()
-			labelClasses[0].expression = exp
-			lyr.showLabels = True	
-
-
-#### set paramters for outputs
-def setOutParam(toolParam):
-	outParam = {
-		'fullPath': toolParam['outPlotLyr'],
-		'lyrName': os.path.basename(arcpy.Describe(toolParam['outPlotLyr']).nameString),
-		'lyrPath': os.path.dirname(arcpy.Describe(toolParam['outPlotLyr']).nameString),
-		'plotId': toolParam['plotId'].value,									# column in original layer to use as main plot id
-		'plotIdSlice': toolParam['plotId'].value + 's',							# new column name for sliced polygons
-		'symLyr': os.path.join(os.path.dirname(toolParam['toolpath']),'plot.lyrx')
-	}
-	#tweet(outParam, ap=arcpy)
-	return(outParam)
-
-
 ### ============ Main ==================
 if __name__ == '__main__':
 	
-	#### Get the parameters set in the Toolbox and in the Map
-	toolParam = getToolParam()
-	mapParam = setArcMapParam()
-	outParam = setOutParam(toolParam)
-	
-	### read the plots into a dictionary
-	plotPoly = loadPolys(toolParam['plotLyr'], toolParam['plotId'].value)
-	
-	slicedPoly = sliceAllPolys(mapParam, toolParam, plotPoly)
-	
-	newLyr = createLayer(outParam, slicedPoly, mapParam['sr'])
+	# Get the parameters set in the Toolbox and in the current Map
+	#  - [plot_layer, plot_layer_id, slice_direction, slice_number, out_plot_layer, number_to_group, field_name 
+	_toolparam = f.get_tool_param()
+	_mapparam = f.set_arcmap_param()  
 
-	addLayer(outParam)
+	# add a specfic spatial reference (need to fix at some point)
+	_mapparam['sr'] = arcpy.SpatialReference(2264)
+
+	# set the output data
+	_output_data = set_output_data(_toolparam)
+	
+	f.tweet(_toolparam, ap=arcpy)
+
+	# read the plots into a dictionary
+	_plot_poly_data = load_polys(_toolparam['plot_layer'], _toolparam['plot_layer_id'].value)
+
+	# slice the polygons 
+	_sliced_polygons = slice_all_polygons(_mapparam, _toolparam, _plot_poly_data)
+
+	# create and sav ethe new sliced layer
+	_new_sliced_layer = create_layer(_sliced_polygons, _mapparam['sr'], _output_data, _toolparam)
+
+	sys.exit()
+
+	add_layer_to_map(_mapparam, _output_data)
 	
 	
 
