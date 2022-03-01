@@ -23,8 +23,7 @@ if __name__ == '__main__':
             _img_folder = os.path.join(root, _toolparam['image_folder'])
             for file in os.listdir(_img_folder):
                 if file.lower().endswith(('.tif', '.tiff')):
-                    items = file.lower().split('_')
-                    if(_toolparam['wildcard'] in items) or (_toolparam['wildcard'] is None):
+                    if(_toolparam['wildcard'] in file) or (_toolparam['wildcard'] is None):
                         _img_file = os.path.join(_img_folder, file)
                         f.tweet(_img_file, ap=arcpy)
                         _img_layer = _mapparam['maps'].addDataFromPath(_img_file)

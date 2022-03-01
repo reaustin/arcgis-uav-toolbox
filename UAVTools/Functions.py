@@ -234,3 +234,13 @@ def find_date(filename):
 		if(len(i) == 8 and i.isdecimal()):
 			return(i)
 	return(filename)
+
+
+# print a dictioary nicely 
+def pretty(d, indent=0):
+   for key, value in d.items():
+      print('\t' * indent + str(key))
+      if isinstance(value, dict):
+         pretty(value, indent+1)
+      else:
+         print('\t' * (indent+1) + str(value))

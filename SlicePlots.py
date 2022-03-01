@@ -39,7 +39,7 @@ def disBetweenPts(pt1, pt2, mapParam):
 
 
 
-### determine which points in the plot rectange should be used to slice the plot (rectangle)
+### determine which points in the plot rectangle should be used to slice the plot (rectangle)
 # - this is based on the sliceDir parameter [Length or Width]
 # - the rray indicates the points and their order to use when creating the new plots 
 #    -line segment1 uses points 1,4    line segment2 uses 2,3  (Length and distP1P2 > distP1P4)
@@ -52,7 +52,7 @@ def get_corners_to_slice(polygon_pt_geometry, direction):
 			return([1,4,2,3])
 		else:
 			return([1,2,4,3])
-	else:							# assuming direction='Width'
+	else:							# assuming direction='Length'
 		if(distP1P2 > distP1P4):
 			return([1,2,4,3])
 		else:
@@ -79,11 +79,11 @@ def getSlicePoints(pt1, pt2, numSlices):
 
 ### slice a single polygon into smaller polygons
 # - when geting points aong lines it is assumes that the corners contains the correct order to slice along the line (always 0,1 and 2,3)
-def slicePoly(toolParam, polyPtsGeom, sr):
+def slicePoly(corners, poly_geom, num_slices, sr):
 	
 	lineSegSlicePoints = { 
-		1: getSlicePoints(polyPtsGeom[toolParam['corners'][0]], polyPtsGeom[toolParam['corners'][1]], toolParam['slice_number']),
-		2: getSlicePoints(polyPtsGeom[toolParam['corners'][2]], polyPtsGeom[toolParam['corners'][3]], toolParam['slice_number'])
+		1: getSlicePoints(poly_geom[corners[0]], poly_geom[corners[1]], num_slices),
+		2: getSlicePoints(poly_geom[corners[2]], poly_geom[corners[3]], num_slices)
 	}
 			
 	### create an array of new Polygon features that are the sliced based on the parallel line segments
@@ -119,32 +119,29 @@ def add_layer_to_map(arcmap_paramters, output_data):
 
 #### set paramters for outputs
 def set_output_data(tool_parameters):
+	#_layer_description = arcpy.Describe(tool_parameters['out_plot_layer'])
 	_out_param = {
 		'slice_layer': tool_parameters['out_plot_layer'],
-		'slice_layer_name': arcpy.Describe(tool_parameters['out_plot_layer']).name,
+		'slice_layer_name': os.path.basename(tool_parameters['out_plot_layer'].value),
 		'slice_layer_path': os.path.dirname(tool_parameters['out_plot_layer'].value),									
 		'slice_id_field': 'Row'											# new column name for sliced polygons
 		#'symLyr': os.path.join(os.path.dirname(os.path.realpath(__file__)),'plot.lyrx')
 	}
-	#tweet(outParam, ap=arcpy)
+	#f.tweet(_out_param, ap=arcpy)
 	return(_out_param)
 
 
 
-def slice_all_polygons(map_param, tool_param, plot_polygons):
-	_polygon_point_geometry = create_point_geometry(plot_polygons[1]['pts'], map_param['sr'])
-	tool_param['corners'] = get_corners_to_slice(_polygon_point_geometry, tool_param['slice_direction'])
-	f.tweet("MSG: Sequence of Plot Corners: {0} ".format(tool_param['corners']), ap=arcpy)
-	
+def slice_all_polygons(map_param, tool_param, plot_polygons):	
 	slicedPoly = {}
 	for oid, p in plot_polygons.items():
-		#tweet(plotPoly[oid]['pts'], ap=arcpy)
-		#tweet(plotPoly[oid]['oid'], ap=arcpy)
 		_polygon_point_geometry = create_point_geometry(plot_polygons[oid]['pts'], map_param['sr'])
+		_slice_corners = get_corners_to_slice(_polygon_point_geometry, tool_param['slice_direction'])
+		#f.tweet("MSG: Sequence of Plot Corners: {0} ".format(_slice_corners), ap=arcpy)
 		slicedPoly[oid] = {
 			'oid': oid,
 			'plot_id': plot_polygons[oid]['plotId'],
-			'slice_polygon_geometry': slicePoly(tool_param, _polygon_point_geometry, map_param['sr'])
+			'slice_polygon_geometry': slicePoly(_slice_corners, _polygon_point_geometry, tool_param['slice_number'], map_param['sr'])
 		}
 	return(slicedPoly)
 
@@ -156,7 +153,6 @@ def create_layer(sliced_polygons, sr, output_data, tool_param):
 	newlayer = arcpy.management.CreateFeatureclass(output_data['slice_layer_path'], output_data['slice_layer_name'], "POLYGON", spatial_reference=sr)
 	fClass = newlayer[0]		# get the path to the layer 
 	arcpy.AddField_management(fClass, tool_param['plot_layer_id'].value, "TEXT", field_length=12)	
-	#arcpy.AddField_management(fClass, output_data['slice_id_field'], "TEXT", field_length=15)
 	arcpy.AddField_management(fClass, output_data['slice_id_field'], "LONG")
 			
 	with arcpy.da.InsertCursor(fClass, ['SHAPE@', tool_param['plot_layer_id'].value, output_data['slice_id_field']]) as cursor:
