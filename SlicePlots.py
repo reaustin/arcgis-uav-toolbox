@@ -46,7 +46,16 @@ def disBetweenPts(pt1, pt2, mapParam):
 def get_corners_to_slice(polygon_pt_geometry, direction):
 	distP1P2 = abs(polygon_pt_geometry[0].distanceTo(polygon_pt_geometry[1]))
 	distP1P4 = abs(polygon_pt_geometry[0].distanceTo(polygon_pt_geometry[3]))
-	f.tweet("MSG: Distance To Corners: P1 to P2: {0:.2f}, P1 to P4: {1:.2f}".format(distP1P2, distP1P4), ap=arcpy)
+	#f.tweet("MSG: Distance To Corners: P1 to P2: {0:.2f}, P1 to P4: {1:.2f}".format(distP1P2, distP1P4), ap=arcpy)
+
+	# if the shape is a square use Width (can fixed later to direction of trial)
+	_dif_in_length = abs(distP1P4 - distP1P4)
+	#f.tweet("MSG: Length Difference: {0:.5f}".format(_dif_in_length), ap=arcpy)
+	
+	# if it is a squure, always split along the same direction (need to fix this assumption)
+	if(_dif_in_length < 0.01):
+		return([1,4,2,3])
+	
 	if(direction == 'Width'):
 		if(distP1P2 > distP1P4):
 			return([1,4,2,3])
@@ -67,13 +76,17 @@ def get_corners_to_slice(polygon_pt_geometry, direction):
 def getSlicePoints(pt1, pt2, numSlices):
 	slicePts = []
 	ang,dist = pt1.angleAndDistanceTo(pt2,'PLANAR')
-	dist = dist * (3937/1200)
-	#tweet("MSG: Angle and Distanace: angle: {0:.2f}, distance: {1:.2f}".format(ang, dist), ap=arcpy)
+	#dist = dist * (3937/1200)
+	dist = dist * (1200/3937)
+	#f.tweet("MSG: Angle and Distanace: angle: {0:.2f}, distance: {1:.2f}".format(ang, dist), ap=arcpy)
 	distBetPts = dist / numSlices
+	
 	slicePts.append(pt1.getPart(0))
 	for s in range(numSlices):
 		fromPt1Dist = (s+1) * distBetPts
+		#f.tweet(fromPt1Dist, ap=arcpy)
 		slicePts.append(pt1.pointFromAngleAndDistance(ang,fromPt1Dist).getPart(0))		# get the Points from the point geometry object
+
 	return(slicePts)
 		
 
@@ -195,6 +208,7 @@ if __name__ == '__main__':
 
 	# add a specfic spatial reference (need to fix at some point)
 	_mapparam['sr'] = arcpy.SpatialReference(2264)
+	#_mapparam['sr'] = arcpy.Describe(_toolparam['plot_layer']).SpatialReference
 
 	# set the output data
 	_output_data = set_output_data(_toolparam)

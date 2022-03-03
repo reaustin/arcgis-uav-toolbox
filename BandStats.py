@@ -86,6 +86,7 @@ def setClassifedRaster(classifiedRatser):
 			'lyr': classifiedRatser,
 			'raster': arcpy.Raster(imgDsc.nameString), 
 			'name' : arcpy.Raster(imgDsc.nameString).name, 
+			'name_base': os.path.splitext(arcpy.Raster(imgDsc.nameString).name)[0],
 			'path': os.path.join(imgDsc.path,imgDsc.nameString),
 			'num_bands': imgDsc.bandCount,
 			'has_vat': arcpy.Raster(imgDsc.nameString).hasRAT
@@ -188,6 +189,8 @@ def mergeDataframes(plotDf, plotIdName, classRasDf, classIdName, zonalRasDf):
 	tweet("MSG: Merging  Plots with Zones", ap=arcpy)
 	zonePlotMerge = pd.merge(zonalRasDf, plotDf, left_on=plotIdName, right_on='Value')
 	zonePlotMerge.rename(columns={'Value_x': 'Value'}, inplace=True)
+	tweet(zonePlotMerge, ap=arcpy)
+	tweet(classIdName, ap=arcpy)
 	zoneClassMerge = pd.merge(zonePlotMerge, classRasDf, left_on=classIdName, right_on='Value')
 	zoneClassMerge.rename(columns={'Value_x': 'Value'}, inplace=True)
 	cleanZoneStatDf(zoneClassMerge)	
@@ -226,7 +229,7 @@ if __name__ == '__main__':
 		zoneRasData = combineRasters(plotData, classRasData, zoneRasFile, debug=DEBUG)
 		
 		#### Merge Vat's - combine the data from the plots layer  and classfied raster vat to create a key to later merge with the zonal stats
-		zoneKeyDf = mergeDataframes(plotData['df'], plotData['name'], classRasData['df'], classRasData['name'], zoneRasData['df'])
+		zoneKeyDf = mergeDataframes(plotData['df'], plotData['name'], classRasData['df'], classRasData['name_base'], zoneRasData['df'])
 
 		### Set the zone data and zone field to the zone raster dataset (plots and classifed classes)
 		zoneData = zoneRasData['raster']
