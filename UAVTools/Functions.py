@@ -206,12 +206,12 @@ def combine_dataframes(df_list):
 
 # Make a new directory for storing tiff,
 def make_dir(new_dir):
-    tweet('MSG: Making directory \n  - {0}'.format(new_dir), ap=arcpy)
-    if not os.path.exists(new_dir):
-        os.makedirs(new_dir)
-        return(new_dir)
-    else:
-        return(None)
+	if not os.path.exists(new_dir):
+		tweet('MSG: Making directory \n  - {0}'.format(new_dir), ap=arcpy)
+		os.makedirs(new_dir)
+		return(new_dir)
+	else:
+		return(None)
 
 
 

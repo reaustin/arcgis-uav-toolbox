@@ -1,3 +1,4 @@
+import os, sys
 import arcpy
 from arcpy import Point, Polygon, Polyline
 import pdb
@@ -16,8 +17,12 @@ def setArcMapParam():
 	param['project'] = arcpy.mp.ArcGISProject("CURRENT")
 	param['maps'] = param['project'].listMaps()[0]
 	arcpy.env.overwriteOutput = True 
-	param['sr'] = arcpy.SpatialReference(2264)
+	#param['sr'] = arcpy.SpatialReference(2264)
+	param['map_sr'] = param['maps'].spatialReference
+	param['meters_per_unit'] = param['map_sr'].metersPerUnit
 	return param
+
+
 
 
 def ScriptTool(param):
@@ -180,9 +185,9 @@ def createPlots(tInfo, spatialRef, flip=False):
 
 
 #### create a layer and add all the plots 	
-def createTrialShape(trial):
+def createTrialShape(trial, sr):
 	tweet("Creating Trial Layer...", ap=arcpy)
-	newlayer = arcpy.management.CreateFeatureclass(arcpy.env.scratchGDB, "plots", "POLYGON", spatial_reference = 2264)
+	newlayer = arcpy.management.CreateFeatureclass(arcpy.env.scratchGDB, "plots", "POLYGON", spatial_reference = sr)
 	fc = newlayer[0]		# get the path to the layer 
 	with arcpy.da.InsertCursor(fc, ['SHAPE@']) as cursor:
 		for x, y in trial['plots'].items():					 # loop through polygons inserting
@@ -205,10 +210,22 @@ def addLabelAtribute(trialInfo, arcgis):
 			cursor.updateRow(row)	
 
 
+# convert the units specified by the user into the unbits of the map frame
+def convert_units(toolParam, conversion):
+	pamam_names = ['plotX','plotY','alleyX','alleyY','boarderX','boarderY']
+	for i, key in toolParam.items():
+		if(i in pamam_names):
+			if(key > 0):
+				toolParam[i] = key * conversion
+				#tweet(toolParam[i],ap=arcpy)
+				
 
 
 #======= MAIN =======#
 if __name__ == '__main__':
+
+	FT_PER_METER = 0.30480060960121924
+	METER_PER_FT = 1/FT_PER_METER
 
 	##### Get the parameters set in the Toolbox
 	toolParam = {}
@@ -219,17 +236,29 @@ if __name__ == '__main__':
 	### Set the paramters to the current working document
 	arcgis = setArcMapParam()
 	
+	if not arcgis['map_sr'].type == "Projected":
+		arcpy.AddError('ERROR: Map Frame must be set up a Projected Coordiate System') 
+		sys.exit()
+	else:
+		arcpy.env.outputCoordinateSystem = arcgis['map_sr']
+		
+
 	### Read in information about the trial sizing and dimensions
 	trialInfo = TrialInfo(toolParam)
 	
 	### Determine trial orientation if not specfied by the user
-	trialInfo['angle'], trialInfo['ulCorner'] = orientation(toolParam['trialGuide'])
-	
+	trialInfo['angle'], trialInfo['ulCorner'] = orientation(toolParam['trialGuide'])	
+
+	###assuming units provided in feet, if the map projection is meters, than convert the orgin of the trials to meters
+	if(arcgis['meters_per_unit'] == 1):
+		trialInfo['ulCorner'].X = trialInfo['ulCorner'].X * FT_PER_METER
+		trialInfo['ulCorner'].Y = trialInfo['ulCorner'].Y * FT_PER_METER
+
 	### Create the Trial
-	trial = CreateTrial(trialInfo, arcgis['sr'])
+	trial = CreateTrial(trialInfo, arcgis['map_sr'])
 	
 	### Create the shapefile layer
-	arcgis['plotLayer'] = createTrialShape(trial)
+	arcgis['plotLayer'] = createTrialShape(trial, arcgis['map_sr'])
 	
 	### Add labels to the plots (columns-rows)
 	addLabelAtribute(trialInfo, arcgis)	
