@@ -200,12 +200,12 @@ def createTrialShape(trial, sr):
 def addLabelAtribute(trialInfo, arcgis):
 	arcpy.AddMessage("Labeling Plots")
 	arcpy.AddField_management(arcgis['plotLayer'], "PlotId", "TEXT", field_length=10)
+	tweet("Rows: {0}".format(trialInfo['plotNum'][1]), ap=arcpy)
 	with arcpy.da.UpdateCursor(arcgis['plotLayer'], ['OID@', 'PlotId']) as cursor:
 		for row in cursor:
 			oid = row[0]
 			curCol = (oid-1)//(trialInfo['plotNum'][1])
-			curRow = oid-(curCol * trialInfo['plotNum'][0])
-			#row[1] = '{:02d}'.format(curRow) + '-' + '{:02d}'.format(curCol+1)
+			curRow = ((oid-1) % trialInfo['plotNum'][1]) + 1
 			row[1] = str(curRow) + '-' + str(curCol+1)
 			cursor.updateRow(row)	
 
