@@ -58,9 +58,10 @@ def set_classifed_raster_data(classified_raster):
 	_class_img = {
 		'lyr': classified_raster,
 		'raster': arcpy.Raster(_img_dsc.nameString), 
-		'name' : arcpy.Raster(_img_dsc.nameString).name, 
+		'name' : classified_raster.name, 
 		'name_base': os.path.splitext(arcpy.Raster(_img_dsc.nameString).name)[0],
-		'path': os.path.join(_img_dsc.path,_img_dsc.nameString),
+		'path': os.path.join(_img_dsc.path,classified_raster.name),
+		'path_root': _img_dsc.path,
 		'num_bands': _img_dsc.bandCount,
 		'has_vat': arcpy.Raster(_img_dsc.nameString).hasRAT
 	}

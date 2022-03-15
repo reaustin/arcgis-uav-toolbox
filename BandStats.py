@@ -85,12 +85,14 @@ def setClassifedRaster(classifiedRatser):
 		classImg = {
 			'lyr': classifiedRatser,
 			'raster': arcpy.Raster(imgDsc.nameString), 
-			'name' : arcpy.Raster(imgDsc.nameString).name, 
+			'name' : classifiedRatser.name, 
 			'name_base': os.path.splitext(arcpy.Raster(imgDsc.nameString).name)[0],
-			'path': os.path.join(imgDsc.path,imgDsc.nameString),
+			'path_root': imgDsc.path,
+			'path': os.path.join(imgDsc.path,classifiedRatser.name),
 			'num_bands': imgDsc.bandCount,
 			'has_vat': arcpy.Raster(imgDsc.nameString).hasRAT
 		}
+		tweet(classImg, ap=arcpy)
 		if(classImg['has_vat']):
 			classImg['df'] = table_to_data_frame(classImg['path'])
 		
