@@ -39,8 +39,10 @@ if __name__ == '__main__':
     _mapparam = f.set_arcmap_param()
 
     # create the output directory for the geotiffs if it does not exsist
-    f.make_dir(_toolparam['output_folder'].value) 
+    f.make_dir("P:\\Tobacco\\locations\\CentralCrops\\GIS\\projects\\CWNCC21\\uav\\imagery\\rgb\\") 
+    #f.make_dir(_toolparam['output_folder'].value) 
 
+    sys.exit()
     # set the layer information for the plot layer
     _plot_layer_data = f.set_layer_data(_toolparam['plot_layer'])
 

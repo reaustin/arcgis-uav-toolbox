@@ -42,12 +42,10 @@ if __name__ == '__main__':
     # Set the output directory for the geotiffs
     _vi_directory = os.path.join(_mapparam['root'], VEG_INDEX_DIR)
 
-    # set UAV Image and related data
-    #_classifed_raster_data = f.set_classifed_raster_data(_toolparam['classified_raster'])
-    #arcpy.env.cellSize = _classifed_raster_data['raster']
 
-    # set the UAV image info and related data - assuming multispectrial
+    # set the UAV image and classifed raster data - and related data - assuming multispectrial
     _uavimg_data = f.set_image_data(_toolparam['img'])
+    _classifed_raster_data = f.set_classifed_raster_data(_toolparam['classified_raster'])
     arcpy.env.cellSize = _uavimg_data['raster']
 
     # chck to see that the image has a least 5 bands (this will need re-written at some ponint for 10 band imagary)

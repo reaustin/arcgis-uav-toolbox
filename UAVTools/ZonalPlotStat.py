@@ -69,7 +69,7 @@ class ZonalPlotStat():
             'raster': arcpy.Raster(_raster_description.nameString), 
             'name' : arcpy.Raster(_raster_description.nameString).name, 
             'name_base': os.path.splitext(arcpy.Raster(_raster_description.nameString).name)[0],
-            'path': os.path.join(_raster_description.path,_raster_description.nameString),
+		    'path': os.path.join(_raster_description.path,_raster_description.name),
             'num_bands': _raster_description.bandCount,
             'has_vat': arcpy.Raster(_raster_description.nameString).hasRAT
         }
