@@ -250,9 +250,12 @@ if __name__ == '__main__':
 	trialInfo['angle'], trialInfo['ulCorner'] = orientation(toolParam['trialGuide'])	
 
 	###assuming units provided in feet, if the map projection is meters, than convert the orgin of the trials to meters
-	if(arcgis['meters_per_unit'] == 1):
-		trialInfo['ulCorner'].X = trialInfo['ulCorner'].X * FT_PER_METER
-		trialInfo['ulCorner'].Y = trialInfo['ulCorner'].Y * FT_PER_METER
+	#tweet("X: {0}, Y: {1}".format(trialInfo['ulCorner'].X, trialInfo['ulCorner'].Y) ,ap=arcpy)
+
+	# if(arcgis['meters_per_unit'] == 1):
+	# 	trialInfo['ulCorner'].X = trialInfo['ulCorner'].X * FT_PER_METER
+	# 	trialInfo['ulCorner'].Y = trialInfo['ulCorner'].Y * FT_PER_METER
+
 
 	### Create the Trial
 	trial = CreateTrial(trialInfo, arcgis['map_sr'])
