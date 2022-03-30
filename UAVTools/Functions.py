@@ -204,6 +204,28 @@ def combine_dataframes(df_list):
 	return(_df_all)
 
 
+### combine datafarmes across for later joining back to plot layer 
+def combine_dataframes_wide(df_list, join_column, dates, columns_to_keep=['area','min','max','mean','std']):
+    columns_to_keep.insert(0,join_column.lower())
+    _new_df = pd.DataFrame()
+    for i, df in enumerate(df_list):
+        _df_sub = df[columns_to_keep]
+        _rename_columns = {}
+        for column in _df_sub: 
+            if(column in columns_to_keep and column != join_column.lower()):
+                #_rename_columns[column] = 'D' + str(i+1) + '_' + column
+                _rename_columns[column] = dates[i][:-4] + '_' + column
+
+        _df_sub.rename(columns=_rename_columns, inplace=True)
+        
+        if(i > 0):
+            _new_df = pd.merge(_new_df, _df_sub, on=join_column.lower())
+        else: 
+            _new_df = _df_sub
+    
+    return(_new_df)
+
+
 
 # Make a new directory for storing tiff,
 def make_dir(new_dir):
@@ -212,7 +234,7 @@ def make_dir(new_dir):
 		return(None)
 	else:
 		tweet('MSG: Making directory \n  - {0}'.format(new_dir), ap=arcpy)
-		#os.mkdir(new_dir)
+		os.mkdir(new_dir)
 		return(new_dir)
 
 
@@ -237,6 +259,8 @@ def find_date(filename):
 		if(len(i) == 8 and i.isdecimal()):
 			return(i)
 	return(filename)
+
+
 
 
 # print a dictioary nicely 

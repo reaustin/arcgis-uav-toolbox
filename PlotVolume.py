@@ -33,6 +33,8 @@ def get_tool_param():
 
 
 
+
+
 if __name__ == '__main__':
    
     DEBUG = False
@@ -40,6 +42,7 @@ if __name__ == '__main__':
     volume_data= {}
 
     # Get the parameters set in the Toolbox and in the current Map
+    #  - plot_lyr, plot_id_field, dsm_base, dsm_list, out_stat_file, tiff_flag, join_flag
     _toolparam = get_tool_param()
     _mapparam = f.set_arcmap_param()
 
@@ -62,21 +65,33 @@ if __name__ == '__main__':
         }
 
 
-    #-- This section is responsible for the zonal statistics calculated from a zonal raster            --#
-    #-- the zonal raster is created by combining the plot layer (as a raster) with a classifed ratser  --#    
-    zps = zps.ZonalPlotStat(_mapparam['scratch'], _toolparam['plot_lyr'], _toolparam['plot_id_field'], _toolparam['classified_raster'])
+    #-- This section is responsible for the zonal statistics calculated from a zonal raster            --#    
+    zps = zps.ZonalPlotStat(_mapparam['scratch'], _toolparam['plot_lyr'], _toolparam['plot_id_field'], classified_raster=None)
 
     zone_stat_data = {}
     for filename, dsm_data in volume_data.items():
         tweet("MSG: Calculating Zonal Statistics\n -> {0}".format(filename), ap=arcpy)
         _out_stat_file = os.path.join(_mapparam['scratch'], filename + '_zs')
         zone_stat_data[filename] = zps.calculate(dsm_data['raster'], _out_stat_file, 'dataset', f.find_date(filename))
-  
+        zone_stat_data[filename]['date'] = f.find_date(filename)
 
     # combine all the data frames into one 
     _df_list = [zone_stat_data[filename]['df'] for filename, data in zone_stat_data.items()]
     _zonestat_df_all = f.combine_dataframes(_df_list)
 
+    # if user wants data joined to plots layer
+    _date_list = [zone_stat_data[filename]['date'] for filename, data in zone_stat_data.items()]
+    if(_toolparam['join_flag']):
+        _zonestat_join_df = f.combine_dataframes_wide(_df_list,_toolparam['plot_id_field'].value, _date_list)
+        tweet(_zonestat_join_df, ap=arcpy)
+
+        # write the dataframe to the geodatabase
+        #_zonestat_join_df.to_csv()
+
+
+
+
+    sys.exit()
 
     # clean up some columns
     #_dropCol = ['variety','majority', 'minority', 'median', 'pct90', 'count_y']
