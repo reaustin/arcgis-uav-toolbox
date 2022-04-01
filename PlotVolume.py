@@ -39,6 +39,7 @@ if __name__ == '__main__':
    
     DEBUG = False
     VEG_INDEX_DIR = 'dsm'
+    THRESHOLD_DIFF = 0.1
     volume_data= {}
 
     # Get the parameters set in the Toolbox and in the current Map
@@ -48,6 +49,9 @@ if __name__ == '__main__':
 
     # Set the output directory for the geotiffs
     _dsm_directory = os.path.join(_mapparam['root'], VEG_INDEX_DIR)
+
+    # Read in the plot layer info
+    _plot_layer = f.set_layer_data(_toolparam['plot_lyr'])
 
     # set the raster information for the base surface model
     _dsm_base_data = f.set_raster_data(_toolparam['dsm_base'])
@@ -64,6 +68,14 @@ if __name__ == '__main__':
             'out_tiff': dsm_data['name_base'] + '_vol.tif'  
         }
 
+    # If diffence between base and surface raster (i.e. volumn raster) is < theshold, set it to null 
+    #    - this assures that these areaes are excluded in the zonal states and that means and not overlyweighted 
+    for index, data in volume_data.items():
+        tweet("MSG: Setting Values < {0} to null".format(THRESHOLD_DIFF), ap=arcpy)
+        _exp = "VALUE < {0}".format(THRESHOLD_DIFF)
+        volume_data[index]['raster'] = arcpy.sa.SetNull(data['raster'], data['raster'], _exp)
+        
+
 
     #-- This section is responsible for the zonal statistics calculated from a zonal raster            --#    
     zps = zps.ZonalPlotStat(_mapparam['scratch'], _toolparam['plot_lyr'], _toolparam['plot_id_field'], classified_raster=None)
@@ -77,21 +89,26 @@ if __name__ == '__main__':
 
     # combine all the data frames into one 
     _df_list = [zone_stat_data[filename]['df'] for filename, data in zone_stat_data.items()]
-    _zonestat_df_all = f.combine_dataframes(_df_list)
+    _zonestat_df_long = f.combine_dataframes(_df_list)
 
     # if user wants data joined to plots layer
     _date_list = [zone_stat_data[filename]['date'] for filename, data in zone_stat_data.items()]
     if(_toolparam['join_flag']):
-        _zonestat_join_df = f.combine_dataframes_wide(_df_list,_toolparam['plot_id_field'].value, _date_list)
-        tweet(_zonestat_join_df, ap=arcpy)
+        _zonestat_df_wide = f.combine_dataframes_wide(_df_list,_toolparam['plot_id_field'].value, _date_list)
+        tweet(_zonestat_df_wide, ap=arcpy)
 
         # write the dataframe to the geodatabase
-        #_zonestat_join_df.to_csv()
+        _zonestat_df_wide_filepath = os.path.splitext(_toolparam['out_stat_file'].value)[0] + '_wide.csv'
+        _zonestat_df_wide.to_csv(_zonestat_df_wide_filepath, index=False)
 
+        # create a copy of the Plots layer
+        _plot_layer_copy = os.path.join(_mapparam['gdb'], _plot_layer['name'] + '_Volumn')
+        arcpy.CopyFeatures_management(_plot_layer['lyr'], _plot_layer_copy)        
+        
+        arcpy.MakeTableView_management(_zonestat_df_wide_filepath, "zonestat_wide")
+        arcpy.JoinField_management(_plot_layer_copy, _toolparam['plot_id_field'].value, "zonestat_wide", _toolparam['plot_id_field'].value.lower())
+        _mapparam['maps'].addDataFromPath(_plot_layer_copy)
 
-
-
-    sys.exit()
 
     # clean up some columns
     #_dropCol = ['variety','majority', 'minority', 'median', 'pct90', 'count_y']
@@ -100,9 +117,9 @@ if __name__ == '__main__':
 
 	# Save the zonal statistics to a table
     tweet("MSG: Saving Zonal Statistics\n  -> {0}".format(_toolparam['out_stat_file'].value), ap=arcpy)
-    _zonestat_df_all.to_csv(_toolparam['out_stat_file'].value, index=False)
+    _zonestat_df_long.to_csv(_toolparam['out_stat_file'].value, index=False)
 
-    #tweet(_zonestat_df_all, ap=arcpy)   
+    #tweet(_zonestat_df_long, ap=arcpy)   
 
     # Write the tiffs to disk - create output file as needed
     if(_toolparam['tiff_flag']):

@@ -28,7 +28,7 @@ def set_arcmap_param():
         'maps':  _prj.listMaps()[0],
         'gdb':  _prj.defaultGeodatabase,
         'root':  os.path.dirname(_prj.filePath),
-        #'scratch': "C:/temp/scratch/"
+        'layers': _prj.listMaps()[0].listLayers(),
         'scratch':  arcpy.env.scratchGDB
     }
     arcpy.env.overwriteOutput = True
@@ -206,24 +206,24 @@ def combine_dataframes(df_list):
 
 ### combine datafarmes across for later joining back to plot layer 
 def combine_dataframes_wide(df_list, join_column, dates, columns_to_keep=['area','min','max','mean','std']):
-    columns_to_keep.insert(0,join_column.lower())
-    _new_df = pd.DataFrame()
-    for i, df in enumerate(df_list):
-        _df_sub = df[columns_to_keep]
-        _rename_columns = {}
-        for column in _df_sub: 
-            if(column in columns_to_keep and column != join_column.lower()):
+	columns_to_keep.insert(0,join_column.lower())
+	_new_df = pd.DataFrame()
+	for i, df in enumerate(df_list):
+		_df_sub = df[columns_to_keep]
+		_rename_columns = {}
+		for column in _df_sub: 
+			if(column in columns_to_keep and column != join_column.lower()):
                 #_rename_columns[column] = 'D' + str(i+1) + '_' + column
-                _rename_columns[column] = dates[i][:-4] + '_' + column
+				_rename_columns[column] = dates[i][:-4] + '_' + column
 
-        _df_sub.rename(columns=_rename_columns, inplace=True)
+		_df_sub.rename(columns=_rename_columns, inplace=True)
         
-        if(i > 0):
-            _new_df = pd.merge(_new_df, _df_sub, on=join_column.lower())
-        else: 
-            _new_df = _df_sub
-    
-    return(_new_df)
+		if(i > 0):
+			_new_df = pd.merge(_new_df, _df_sub, on=join_column.lower())
+		else: 
+			_new_df = _df_sub
+
+	return(_new_df.round(2))
 
 
 
