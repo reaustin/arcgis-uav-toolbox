@@ -1,0 +1,8 @@
+# Ignore all text files
+*.txt
+
+# ignore the /old folder
+./old
+
+# ignore the /resources folder
+./resources
