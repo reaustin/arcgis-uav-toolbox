@@ -47,10 +47,16 @@ def extract_plots(uav_image, plot_lyr):
 
 
 # subtract two layers from one another resulting in a difference surface
-def calc_volume(base_raster, surface_raster):
+def calc_volume(base_raster, surface_raster, mask=None):
     tweet('MSG: Calculating difference between surface rasters..', ap=arcpy)
+
+    if(mask is not None):
+        tweet("MSG: Setting Mask...\n  - {0}".format(mask), ap=arcpy)
+        arcpy.env.mask = mask
+
     _out_ras = RasterCalculator([base_raster, surface_raster], 
                                 ['BASE','SURFACE'], 
                                 'SURFACE - BASE'
                                 )
     return(_out_ras)
+

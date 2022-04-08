@@ -39,7 +39,7 @@ if __name__ == '__main__':
    
     DEBUG = False
     VEG_INDEX_DIR = 'dsm'
-    THRESHOLD_DIFF = 0.1
+    THRESHOLD_DIFF = 0.2
     volume_data= {}
 
     # Get the parameters set in the Toolbox and in the current Map
@@ -60,11 +60,11 @@ if __name__ == '__main__':
     # calculate the volumnes from the set of in-season surface models
     #tweet(_toolparam['dsm_list'], ap=arcpy)
    
-    # loop through the arcpy Value table pulling out the mapping objects - note it is a list of lists, thus refer to the first item for the raster layer
+    # loop through the user-specfied dsm models calculating the diffence between the orginal date and the later dates 
     for dsm in _toolparam['dsm_list']:
         dsm_data = f.set_raster_data(dsm[0])
         volume_data[dsm_data['name_base']] = { 
-            'raster': sa.calc_volume(_dsm_base_data['raster'],dsm_data['raster']),
+            'raster': sa.calc_volume(_dsm_base_data['raster'],dsm_data['raster'], mask=_plot_layer['path']),
             'out_tiff': dsm_data['name_base'] + '_vol.tif'  
         }
 
@@ -94,8 +94,9 @@ if __name__ == '__main__':
     # if user wants data joined to plots layer
     _date_list = [zone_stat_data[filename]['date'] for filename, data in zone_stat_data.items()]
     if(_toolparam['join_flag']):
+        tweet("MSG: Joining results to new plot layer...", ap=arcpy)
         _zonestat_df_wide = f.combine_dataframes_wide(_df_list,_toolparam['plot_id_field'].value, _date_list)
-        tweet(_zonestat_df_wide, ap=arcpy)
+        #tweet(_zonestat_df_wide, ap=arcpy)
 
         # write the dataframe to the geodatabase
         _zonestat_df_wide_filepath = os.path.splitext(_toolparam['out_stat_file'].value)[0] + '_wide.csv'
@@ -123,7 +124,7 @@ if __name__ == '__main__':
 
     # Write the tiffs to disk - create output file as needed
     if(_toolparam['tiff_flag']):
-        f.make_dir(_dsm_directory)        
+        f.make_dir(_dsm_directory)
         for index, data in volume_data.items():
             outFilePath = os.path.join(_dsm_directory, data['out_tiff'])
             tweet("MSG: Saving raster for index ({0})\n  - {1}".format(index, outFilePath), ap=arcpy)

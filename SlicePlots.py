@@ -72,12 +72,9 @@ def get_corners_to_slice(polygon_pt_geometry, direction):
 
 ### get the points alone a line that extends from pt1 to pt2 by the number of slices
 # - assumes pts are <PointGeometry> type
-# - WARNING: For some reason distance is always reporting in meters regardless of spatial reference
 def getSlicePoints(pt1, pt2, numSlices):
 	slicePts = []
 	ang,dist = pt1.angleAndDistanceTo(pt2,'PLANAR')
-	#dist = dist * (3937/1200)
-	dist = dist * (1200/3937)
 	#f.tweet("MSG: Angle and Distanace: angle: {0:.2f}, distance: {1:.2f}".format(ang, dist), ap=arcpy)
 	distBetPts = dist / numSlices
 	
@@ -85,13 +82,13 @@ def getSlicePoints(pt1, pt2, numSlices):
 	for s in range(numSlices):
 		fromPt1Dist = (s+1) * distBetPts
 		#f.tweet(fromPt1Dist, ap=arcpy)
-		slicePts.append(pt1.pointFromAngleAndDistance(ang,fromPt1Dist).getPart(0))		# get the Points from the point geometry object
+		slicePts.append(pt1.pointFromAngleAndDistance(ang,fromPt1Dist,'PLANAR').getPart(0))		# get the Points from the point geometry object
 
 	return(slicePts)
 		
 
 ### slice a single polygon into smaller polygons
-# - when geting points aong lines it is assumes that the corners contains the correct order to slice along the line (always 0,1 and 2,3)
+# - when geting points along lines it is assumes that the corners contains the correct order to slice along the line (always 0,1 and 2,3)
 def slicePoly(corners, poly_geom, num_slices, sr):
 	
 	lineSegSlicePoints = { 
@@ -99,6 +96,7 @@ def slicePoly(corners, poly_geom, num_slices, sr):
 		2: getSlicePoints(poly_geom[corners[2]], poly_geom[corners[3]], num_slices)
 	}
 			
+	
 	### create an array of new Polygon features that are the sliced based on the parallel line segments
 	newPolys = []
 	for i in range(len(lineSegSlicePoints[1])-1):
@@ -151,6 +149,8 @@ def slice_all_polygons(map_param, tool_param, plot_polygons):
 		_polygon_point_geometry = create_point_geometry(plot_polygons[oid]['pts'], map_param['sr'])
 		_slice_corners = get_corners_to_slice(_polygon_point_geometry, tool_param['slice_direction'])
 		#f.tweet("MSG: Sequence of Plot Corners: {0} ".format(_slice_corners), ap=arcpy)
+		#f.tweet(_polygon_point_geometry[0].firstPoint, ap=arcpy)
+		#sys.exit()
 		slicedPoly[oid] = {
 			'oid': oid,
 			'plot_id': plot_polygons[oid]['plotId'],
