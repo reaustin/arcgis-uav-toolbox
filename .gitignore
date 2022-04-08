@@ -1,5 +1,6 @@
 # Ignore all text files
 *.txt
+*.mp4
 
 # ignore the /old folder
 ./old
