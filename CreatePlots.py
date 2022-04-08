@@ -42,6 +42,7 @@ def calcAngle(pt1, pt2, flip=False):
 	return(rotAngle)
 
 
+
 #### Get the upper left hand corner of a plot (x,y) pair based on column and row
 # - x and y are based off 0,0 orgin at this point in the code
 def getPlot_ll(column, row, tInfo):

@@ -109,7 +109,8 @@ def slicePoly(corners, poly_geom, num_slices, sr):
 	
 	return(newPolys)
 
-
+  
+  
 
 #### add the plot layer to the data frame
 def add_layer_to_map(arcmap_paramters, output_data):
