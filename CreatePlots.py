@@ -13,7 +13,6 @@ def tweet(msg, ap=None):
 
 
 def setArcMapParam():
-	
 	param = {}
 	param['project'] = arcpy.mp.ArcGISProject("CURRENT")
 	param['maps'] = param['project'].listMaps()[0]
