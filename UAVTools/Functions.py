@@ -248,7 +248,20 @@ def set_band_order(num_bands=3):
 		return(['B', 'G', 'R', 'RE', 'NIR'])		# assuming rededge 
 	if(num_bands == 6):
 		return(['B', 'G', 'R', 'RE', 'NIR', 'LWIR']) 		# assuming altum
+	if(num_bands == 10):
+		return(['B2', 'B', 'G2', 'G', 'NIR2', 'R', 'R2',  'RE2',  'RE', 'NIR']) 		# assuming RE-Dual		
 	return(None)
+
+# MG_0500_1.tif    Blue                2 (B)
+# IMG_0500_2.tif   Green               4 (G)
+# IMG_0500_3.tif   Red                 6 (R)
+# IMG_0500_4.tif   Near Infrared      10 (NIR)
+# IMG_0500_5.tif   Red Edge            9 (RE)
+# IMG_0500_6.tif   Coastal Blue        1 (B2)
+# IMG_0500_7.tif   Green               3 (G2)
+# IMG_0500_8.tif   Red                 7 (R2)
+# IMG_0500_9.tif   Red Edge            5 (NIR2)
+# IMG_0500_10.tif  Red Edge            8 (RE2)
 
 
 
