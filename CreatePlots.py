@@ -13,16 +13,27 @@ def tweet(msg, ap=None):
 
 
 def setArcMapParam():
+	
 	param = {}
 	param['project'] = arcpy.mp.ArcGISProject("CURRENT")
 	param['maps'] = param['project'].listMaps()[0]
 	arcpy.env.overwriteOutput = True 
-	#param['sr'] = arcpy.SpatialReference(2264)
+	checkProjection(param['maps'].spatialReference)
+	#tweet(param, ap=arcpy)
 	param['map_sr'] = param['maps'].spatialReference
 	param['meters_per_unit'] = param['map_sr'].metersPerUnit
+	arcpy.env.outputCoordinateSystem = arcpy.SpatialReference(param['map_sr'].factoryCode)
+	#arcgis['map_sr'] = arcpy.SpatialReference(2264)
 	return param
 
 
+# check to make sure the map is set with a 'projected' coordinate system
+def checkProjection(currProjection):
+	tweet("Map Projection: {0}".format(currProjection.name) ,ap=arcpy)
+	tweet("Projection Type: {0}".format(currProjection.type) ,ap=arcpy)
+	if not currProjection.type == "Projected":
+		arcpy.AddError('ERROR: Map Frame must be set up a Projected Coordiate System') 
+		sys.exit()
 
 
 def ScriptTool(param):
@@ -151,6 +162,11 @@ def CreateTrial(trialInfo, spatialRef):
 ##### Determine trial angle anf upper left corner from user input - i.e. trialGuide FeatureSet
 def orientation(trialGuide):
 	vertex = []															# an array of points, each point is a vertex of the line that the user created 
+	count = int(arcpy.GetCount_management(trialGuide).getOutput(0))
+	if(count == 0):
+		arcpy.AddError("ERROR: You're Trial Guide is empty - draw a line bubba!!") 
+		sys.exit()
+
 	for row in arcpy.da.SearchCursor(trialGuide, ["SHAPE@"]):
 		for segment in row[0].getPart():
 			for point in segment:
@@ -222,6 +238,8 @@ def convert_units(toolParam, conversion):
 				
 
 
+
+
 #======= MAIN =======#
 if __name__ == '__main__':
 
@@ -233,16 +251,9 @@ if __name__ == '__main__':
 	params	= arcpy.GetParameterInfo()
 	for p in params:
 		toolParam[p.name] = p.value
-	
+		
 	### Set the paramters to the current working document
 	arcgis = setArcMapParam()
-	
-	if not arcgis['map_sr'].type == "Projected":
-		arcpy.AddError('ERROR: Map Frame must be set up a Projected Coordiate System') 
-		sys.exit()
-	else:
-		arcpy.env.outputCoordinateSystem = arcgis['map_sr']
-		
 
 	### Read in information about the trial sizing and dimensions
 	trialInfo = TrialInfo(toolParam)
