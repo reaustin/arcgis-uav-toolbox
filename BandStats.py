@@ -130,7 +130,9 @@ def calcZoneStats(scratchGDB, zoneData, zoneField, uavImg, debug=False):
 		cOutFile =  os.path.join(scratchGDB,'ZStat_' + str(b.name))
 		tweet("MSG: Calculating Statistics for Band Number: {0}\n  {1}".format(b.name,cOutFile), ap=arcpy)
 		if(not debug):
-			ZonalStatisticsAsTable(zoneData, zoneField, cBandPath, cOutFile, "NODATA", "ALL")
+			# this failed in Cassie's work.. - would not calulate staes for Values=0, perhaps thinks it's nodata?
+			#ZonalStatisticsAsTable(zoneData, zoneField, cBandPath, cOutFile, "NODATA", "ALL")
+			ZonalStatisticsAsTable(zoneData, zoneField, cBandPath, cOutFile)
 		zoneStat[i] = { 
 			'band' : b.name,
 			'statFile' : cOutFile 
@@ -177,12 +179,13 @@ def combineRasters(plotData, classRasData, outRasFile, debug=False):
 	return(zoneRasData)
 
 
-### clean up tey data frame by removeing pixel counts and other unneeded columns
+### clean up the data frame by removing pixel counts and other unneeded columns
 def cleanZoneStatDf(dfMerge):
-	dropCol = ['Value_y','Count_x', 'Count_y', 'Red', 'Green', 'Blue']
+	#tweet(dfMerge, ap=arcpy)
+	#dropCol = ['Value_y','Count_x', 'Count_y', 'Red', 'Green', 'Blue']
+	dropCol = ['Value_y','Count_x', 'Count_y']
 	dfMerge.drop(columns=dropCol, inplace=True)
 	dfMerge.sort_values(by=['Value'], inplace=True)
-
 
 
 
@@ -191,8 +194,6 @@ def mergeDataframes(plotDf, plotIdName, classRasDf, classIdName, zonalRasDf):
 	tweet("MSG: Merging  Plots with Zones", ap=arcpy)
 	zonePlotMerge = pd.merge(zonalRasDf, plotDf, left_on=plotIdName, right_on='Value')
 	zonePlotMerge.rename(columns={'Value_x': 'Value'}, inplace=True)
-	tweet(zonePlotMerge, ap=arcpy)
-	tweet(classIdName, ap=arcpy)
 	zoneClassMerge = pd.merge(zonePlotMerge, classRasDf, left_on=classIdName, right_on='Value')
 	zoneClassMerge.rename(columns={'Value_x': 'Value'}, inplace=True)
 	cleanZoneStatDf(zoneClassMerge)	
@@ -229,16 +230,20 @@ if __name__ == '__main__':
 		#### Combine the plot ratser and the classifed raster to create unique zones for the zonal statistics
 		zoneRasFile = os.path.join(mapParam['scratch'],"zone_ras")
 		zoneRasData = combineRasters(plotData, classRasData, zoneRasFile, debug=DEBUG)
-		
+
 		#### Merge Vat's - combine the data from the plots layer  and classfied raster vat to create a key to later merge with the zonal stats
 		zoneKeyDf = mergeDataframes(plotData['df'], plotData['name'], classRasData['df'], classRasData['name_base'], zoneRasData['df'])
+
+		tweet("MSG: ZoneKey", ap=arcpy)
+		tweet(zoneKeyDf, ap=arcpy)
 
 		### Set the zone data and zone field to the zone raster dataset (plots and classifed classes)
 		zoneData = zoneRasData['raster']
 		zoneField = 'VALUE'
 
 	else:
-		### setthe zone Data and Ids
+		tweet("MSG: No Classifed Raster Set\n", ap=arcpy)
+		### set the zone Data and Ids
 		zoneData = toolParam['plotLyr']
 		zoneField = toolParam['plotID']	
 
