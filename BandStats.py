@@ -123,7 +123,6 @@ def createPlotRaster(plotLyr, plotIdField, outRasFile, debug=False):
 def calcZoneStats(scratchGDB, zoneData, zoneField, uavImg, debug=False):
 	imgDsc = arcpy.Describe(uavImg)
 	zoneStat = {}
-
 	i = 1
 	for b in imgDsc.children:
 		cBandPath = os.path.join(imgDsc.catalogPath,b.name)
