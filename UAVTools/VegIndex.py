@@ -92,7 +92,6 @@ def calcMPRI(img, band_order=['R','G','B']):
     return(_out_ras)
 
 
-
 # Calculate the Vegetativen Index (VEG) - Hague et al. (2006)
 def calcVEG(img, band_order=['R','G','B']):
     tweet('Calculating VEG...', ap=arcpy)

@@ -60,7 +60,6 @@ class ZonalPlotStat():
         return(_plot_data)
 
 
-
     # Set information about the classified raster layer 
     def set_raster_data(self, raster): 
         _raster_description = arcpy.Describe(raster)

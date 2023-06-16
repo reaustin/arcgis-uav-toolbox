@@ -20,7 +20,6 @@ def combine_rasters(plot_data, classified_raster_data, output_file, debug=False)
 	return(_zone_raster_data)
 
 
-
 # Calculate the statistics by zone (i.e. the zones are a combination of plots and classified raster)
 def calc_zonalstats(zone_raster, vi_raster_data, out_stat_file, debug=False):
     tweet('MSG: Calculating Zonal Statistics ({0}) \n - {1}'.format(vi_raster_data['index'], out_stat_file), ap=arcpy)

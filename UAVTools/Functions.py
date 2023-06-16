@@ -3,7 +3,6 @@ import pandas as pd
 import arcpy
 
 
-
 # Send a message to the console or ArcGIS Messgae box
 def tweet(msg, ap=None):
 	if(ap is not None):
