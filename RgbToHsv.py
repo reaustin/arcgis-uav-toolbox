@@ -9,7 +9,6 @@ from importlib import reload
 reload(UAVTools.Functions)
 
 
-
 if __name__ == '__main__':
 
     OUT_IMAGE_POSTFIX = '_hsv.tif'

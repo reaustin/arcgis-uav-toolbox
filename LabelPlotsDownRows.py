@@ -11,7 +11,6 @@ from importlib import reload
 reload(UAVTools.Functions)
 
 
-
 def get_polygon_centroids(plot_layer, plot_label_field):
 	_plot_centers = {}
 	for row in arcpy.da.SearchCursor(plot_layer, ['OID@', plot_label_field.value, 'SHAPE@XY']):

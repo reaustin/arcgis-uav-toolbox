@@ -28,7 +28,6 @@ def loadAttributes():
 	return(pd.DataFrame(data))
 
 
-
 ### add new label attribute to plot layer
 def addAttribute(df, toolParam):
 	colMax = df['col'].max()

@@ -9,7 +9,6 @@ from importlib import reload
 reload(UAVTools.Functions)
 
 
-
 def load_polys(plot_layer, plot_id_field):
 	_plot_poly = {}
 	for row in arcpy.da.SearchCursor(plot_layer, ['OID@', plot_id_field, 'SHAPE@']):

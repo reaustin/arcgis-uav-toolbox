@@ -15,6 +15,7 @@ def tweet(msg, ap=None):
     print(msg)
 
 
+
 # Get the tools parameters [plot_lyr, img_list, output_folder, buffer_distance]
 def get_tool_param():
     param = {}
