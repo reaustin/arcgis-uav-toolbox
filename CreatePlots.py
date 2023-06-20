@@ -270,10 +270,14 @@ if __name__ == '__main__':
 
 
 	### Create the Trial
-	trial = CreateTrial(trialInfo, arcgis['map_sr'])
+	tweet(arcgis ,ap=arcpy)
+	#trial = CreateTrial(trialInfo, arcgis['map_sr'])
+	trial = CreateTrial(trialInfo, arcgis['maps'].spatialReference)
 	
 	### Create the shapefile layer
-	arcgis['plotLayer'] = createTrialShape(trial, arcgis['map_sr'])
+	#arcgis['plotLayer'] = createTrialShape(trial, arcgis['map_sr'])
+	arcgis['plotLayer'] = createTrialShape(trial, arcgis['maps'].spatialReference)
+
 	
 	### Add labels to the plots (columns-rows)
 	addLabelAtribute(trialInfo, arcgis)	
