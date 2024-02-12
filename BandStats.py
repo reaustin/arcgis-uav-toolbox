@@ -160,7 +160,8 @@ def addBandNumbers(zoneStat):
 def combineDataFrames(zoneStat):
 	df_all = pd.DataFrame()
 	for bandnum, zoneDict in zoneStat.items():
-		df_all = df_all.append(zoneDict['df'])
+		#df_all = df_all.append(zoneDict['df'])
+		df_all = pd.concat([df_all, pd.DataFrame(zoneDict['df'])], ignore_index=True)
 	return(df_all)
 
 

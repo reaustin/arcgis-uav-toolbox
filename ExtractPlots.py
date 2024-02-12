@@ -15,15 +15,12 @@ def tweet(msg, ap=None):
     print(msg)
 
 
-
 # Get the tools parameters [plot_lyr, img_list, output_folder, buffer_distance]
 def get_tool_param():
     param = {}
     for p in arcpy.GetParameterInfo():
         param[p.name] = p.value
     return(param)
-
-
 
 
 if __name__ == '__main__':
@@ -39,7 +36,7 @@ if __name__ == '__main__':
     _toolparam = get_tool_param()
     _mapparam = f.set_arcmap_param()
 
-    # create the output directory for the geotiffs if it does not exsist - not needed - toll verifies
+    # create the output directory for the geotiffs if it does not exsist - not needed - tool verifies
     #f.make_dir(_toolparam['output_folder'].value) 
     
 
@@ -47,7 +44,7 @@ if __name__ == '__main__':
     _plot_layer_data = f.set_layer_data(_toolparam['plot_layer'])
 
     
-    # if a beffer is set create the buffer around the plots
+    # if a buffer is set create the buffer around the plots
     if(_toolparam['buffer_distance'] > 0):
         tweet('Buffering Plot Layer... ', ap=arcpy)
         arcpy.Buffer_analysis(_plot_layer_data['lyr'], PLOT_BUFFER, _toolparam['buffer_distance'])
@@ -73,4 +70,4 @@ if __name__ == '__main__':
     if(_toolparam['buffer_distance'] > 0):
         _plot_layer_data['lyr'].cleanup()
     
-    tweet("\nI'm Extracted ;) ", ap=arcpy)
+    tweet("\nI'm Extracted... ;) ", ap=arcpy)
