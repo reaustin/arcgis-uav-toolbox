@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Austin"
+  given-names: "Robert"
+title: "UAV Toolbox"
+version: 0.1.0
+date-released: 2022-2-20
+url: "https://github.com/reaustin/arcgis-uav-toolbox"
